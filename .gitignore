@@ -10,3 +10,4 @@ kubeconfig*
 
 # macOS
 .DS_Store
+tfplan
