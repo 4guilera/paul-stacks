@@ -1,6 +1,6 @@
 - name: Validate inputs
   ansible.builtin.assert:
-    that: k3s_version | length > 0 and k3s_version != "v1.36.5+k3s1"
+    that: k3s_version | length > 0 and k3s_version != "REPLACE_ME"
     fail_msg: "Set k3s_version in group_vars/all.yml to a stable-channel release"
 
 - name: Base OS preparation
