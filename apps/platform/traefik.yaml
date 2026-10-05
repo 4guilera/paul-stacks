@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: 41.6.1
+    helm:
+      valuesObject:
+        service:
+          annotations:
+            metallb.io/loadBalancerIPs: 10.0.20.80 # fixed IP, so DNS never has to change
+        ingressClass:
+          enabled: true
+          isDefaultClass: true
+        accessLog: # chart v41+: was logs.access before the upstream-syntax alignment
+          enabled: true # Loki will collect these in step 8
+        resources:
+          requests: { cpu: 100m, memory: 64Mi }
+          limits: { memory: 256Mi }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
