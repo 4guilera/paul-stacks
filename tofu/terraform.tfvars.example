@@ -1,0 +1,3 @@
+image_url      = "https://cloud-images.ubuntu.com/releases/noble/release-YYYYMMDD/ubuntu-24.04-server-cloudimg-amd64.img"
+image_checksum = "<sha256 from that release's SHA256SUMS>"
+ssh_public_key = "ssh-ed25519 AAAA... ansible@provisioner"
