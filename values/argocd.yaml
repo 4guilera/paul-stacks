@@ -1,0 +1,35 @@
+# Argo CD Helm values. Used by bootstrap.sh AND by apps/argocd.yaml,
+# so the bootstrap install and the self-managed install are identical.
+
+dex:
+  enabled: false # local admin for now; SSO is a possible later project
+
+controller:
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+repoServer:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+server:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+redis:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+applicationSet:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+notifications:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
