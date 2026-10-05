@@ -1,0 +1,47 @@
+- name: Write k3s server config
+  ansible.builtin.template:
+    src: server-config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0600"
+  notify: Restart k3s
+
+- name: Install k3s server
+  ansible.builtin.command: /usr/local/bin/k3s-install.sh server
+  args:
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+
+- name: Wait for API server to be ready
+  ansible.builtin.command: k3s kubectl get --raw /readyz
+  register: k3s_readyz
+  until: k3s_readyz.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Read node join token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token_raw
+  no_log: true
+
+- name: Hold join token in memory for agents
+  ansible.builtin.set_fact:
+    k3s_node_token: "{{ k3s_node_token_raw.content | b64decode | trim }}"
+  no_log: true
+
+- name: Read kubeconfig
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_kubeconfig_raw
+  no_log: true
+
+- name: Save kubeconfig on the controller (gitignored)
+  ansible.builtin.copy:
+    content: "{{ k3s_kubeconfig_raw.content | b64decode | replace('https://127.0.0.1:6443', 'https://' ~ k3s_api_endpoint ~ ':6443') }}"
+    dest: "{{ k3s_kubeconfig_local }}"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  no_log: true

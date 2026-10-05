@@ -1,0 +1,12 @@
+# Managed by Ansible (paul-stacks). Manual edits will be overwritten.
+cluster-init: true
+node-ip: {{ ansible_host }}
+tls-san:
+  - {{ ansible_host }}
+  - {{ inventory_hostname }}
+write-kubeconfig-mode: "0600"
+secrets-encryption: true
+disable:
+{% for item in k3s_disable %}
+  - {{ item }}
+{% endfor %}

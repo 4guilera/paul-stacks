@@ -1,0 +1,15 @@
+- name: Validate inputs
+  ansible.builtin.assert:
+    that: k3s_version | length > 0 and k3s_version != "v1.36.5+k3s1"
+    fail_msg: "Set k3s_version in group_vars/all.yml to a stable-channel release"
+
+- name: Base OS preparation
+  ansible.builtin.import_tasks: prereqs.yml
+
+- name: Install k3s server
+  ansible.builtin.include_tasks: server.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- name: Install k3s agent
+  ansible.builtin.include_tasks: agent.yml
+  when: inventory_hostname in groups['k3s_agent']

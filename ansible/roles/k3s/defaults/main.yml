@@ -1,0 +1,14 @@
+k3s_version: ""
+k3s_install_script_url: https://get.k3s.io
+k3s_server_host: "{{ groups['k3s_server'][0] }}"
+k3s_api_endpoint: "{{ hostvars[k3s_server_host].ansible_host }}"
+k3s_kubeconfig_local: "{{ playbook_dir }}/../kubeconfig"
+
+k3s_base_packages:
+  - qemu-guest-agent
+  - nfs-common
+  - curl
+
+k3s_disable:
+  - traefik   # deployed by Argo CD so its version lives in Git
+  - servicelb # replaced by MetalLB

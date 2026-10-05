@@ -1,0 +1,4 @@
+# Managed by Ansible (paul-stacks). Manual edits will be overwritten.
+server: https://{{ k3s_api_endpoint }}:6443
+token: {{ hostvars[k3s_server_host].k3s_node_token }}
+node-ip: {{ ansible_host }}

@@ -1,0 +1,19 @@
+- name: Ensure the server ran in this play
+  ansible.builtin.assert:
+    that: hostvars[k3s_server_host].k3s_node_token is defined
+    fail_msg: "Join token missing. Run the full play; don't --limit to agents only."
+
+- name: Write k3s agent config
+  ansible.builtin.template:
+    src: agent-config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0600"
+  notify: Restart k3s
+  no_log: true
+
+- name: Install k3s agent
+  ansible.builtin.command: /usr/local/bin/k3s-install.sh agent
+  args:
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
