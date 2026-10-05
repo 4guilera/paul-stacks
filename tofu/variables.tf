@@ -30,7 +30,7 @@ variable "bridge" {
 variable "vlan_id" {
   description = "null if vmbr0 is not VLAN-aware / untagged for LAB"
   type        = number
-  default     = 20
+  default     = null
   nullable    = true
 }
 
