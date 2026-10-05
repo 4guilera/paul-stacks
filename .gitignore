@@ -1,0 +1,12 @@
+# OpenTofu
+.terraform/
+*.tfstate*
+*.tfvars
+!*.tfvars.example
+
+# Secrets / credentials
+kubeconfig*
+*.agekey
+
+# macOS
+.DS_Store
