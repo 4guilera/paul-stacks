@@ -18,7 +18,7 @@ spec:
           volumeBindingMode: Immediate
           parameters:
             server: 10.0.20.5
-            share: __NFS_SHARE__
+            share: /mnt/tank/k8s
             subDir: ${pvc.metadata.namespace}/${pvc.metadata.name} # stable path = data survives rebuilds
             onDelete: retain
           mountOptions:
