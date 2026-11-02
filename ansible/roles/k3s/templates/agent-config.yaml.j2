@@ -2,3 +2,7 @@
 server: https://{{ k3s_api_endpoint }}:6443
 token: {{ hostvars[k3s_server_host].k3s_node_token }}
 node-ip: {{ ansible_host }}
+
+# kube-proxy metrics for kube-prometheus-stack
+kube-proxy-arg:
+  - metrics-bind-address=0.0.0.0

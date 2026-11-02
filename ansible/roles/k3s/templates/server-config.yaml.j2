@@ -10,3 +10,13 @@ disable:
 {% for item in k3s_disable %}
   - {{ item }}
 {% endfor %}
+
+# Control-plane metrics for kube-prometheus-stack.
+# k3s binds these to localhost by default; Prometheus runs on another node.
+etcd-expose-metrics: true
+kube-controller-manager-arg:
+  - bind-address=0.0.0.0
+kube-scheduler-arg:
+  - bind-address=0.0.0.0
+kube-proxy-arg:
+  - metrics-bind-address=0.0.0.0
