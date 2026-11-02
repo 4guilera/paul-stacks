@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pve-exporter
+  namespace: monitoring
+  labels: { app: pve-exporter }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: pve-exporter }
+  template:
+    metadata:
+      labels: { app: pve-exporter }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: pve-exporter
+          image: prompve/prometheus-pve-exporter:3.11.0
+          ports:
+            - { name: http, containerPort: 9221 }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus/pve.yml # the image's default config path
+              subPath: pve.yml
+              readOnly: true
+          readinessProbe:
+            tcpSocket: { port: http }
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: config
+          secret:
+            secretName: pve-exporter # SOPS-encrypted in manifests/secrets/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pve-exporter
+  namespace: monitoring
+spec:
+  selector: { app: pve-exporter }
+  ports:
+    - { name: http, port: 9221, targetPort: http }
+---
+# Prometheus scrapes each Proxmox node *through* the exporter:
+# target=<node IP> becomes a URL parameter; the request goes to the exporter.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: proxmox
+  namespace: monitoring
+spec:
+  metricsPath: /pve
+  params:
+    module: [default]
+    cluster: ["1"]
+    node: ["1"]
+  staticConfigs:
+    - targets: [10.0.20.10, 10.0.20.11]
+      labels: { cluster: homelab }
+  relabelings:
+    - sourceLabels: [__address__]
+      targetLabel: __param_target
+    - sourceLabels: [__param_target]
+      targetLabel: instance
+    - targetLabel: __address__
+      replacement: pve-exporter.monitoring.svc:9221
