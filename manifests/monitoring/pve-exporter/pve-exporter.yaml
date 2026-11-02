@@ -25,6 +25,8 @@ spec:
               mountPath: /etc/prometheus/pve.yml # the image's default config path
               subPath: pve.yml
               readOnly: true
+            - name: tmp
+              mountPath: /tmp # gunicorn needs a writable temp dir; root FS stays read-only
           readinessProbe:
             tcpSocket: { port: http }
           resources:
@@ -35,6 +37,10 @@ spec:
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
       volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
         - name: config
           secret:
             secretName: pve-exporter # SOPS-encrypted in manifests/secrets/
