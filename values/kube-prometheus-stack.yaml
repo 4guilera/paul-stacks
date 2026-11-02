@@ -1,0 +1,118 @@
+# kube-prometheus-stack values for paul-stacks (k3s, 2 nodes)
+
+crds:
+  enabled: true
+
+# ---------------------------------------------------------------------------
+# k3s control plane: one process, metrics bound to the node IP by Ansible
+# (ansible/roles/k3s/templates/server-config.yaml.j2). Point scrapes at k3s1.
+# ---------------------------------------------------------------------------
+kubeControllerManager:
+  endpoints: [10.0.20.70]
+  service:
+    port: 10257
+    targetPort: 10257
+  serviceMonitor:
+    https: true
+    insecureSkipVerify: true # self-signed component cert
+
+kubeScheduler:
+  endpoints: [10.0.20.70]
+  service:
+    port: 10259
+    targetPort: 10259
+  serviceMonitor:
+    https: true
+    insecureSkipVerify: true
+
+kubeEtcd:
+  endpoints: [10.0.20.70]
+  service:
+    port: 2381
+    targetPort: 2381
+
+kubeProxy:
+  endpoints: [10.0.20.70, 10.0.20.71]
+  service:
+    port: 10249
+    targetPort: 10249
+
+# ---------------------------------------------------------------------------
+# Prometheus: local disk only (TSDB is not supported on NFS), pinned to the
+# agent node, bounded by both time and size.
+# ---------------------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    retentionSize: 8GB
+    nodeSelector:
+      kubernetes.io/hostname: k3s2
+    resources:
+      requests: { cpu: 200m, memory: 1Gi }
+      limits: { memory: 2Gi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 10Gi
+    # Discover monitors and rules from every namespace, not only this release's
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.k3s.home.arpa]
+    paths: ["/"]
+
+# ---------------------------------------------------------------------------
+# Alertmanager: routing to ntfy and the Watchdog heartbeat come in step 7.
+# No persistent storage: silences reset on restart, acceptable for now.
+# ---------------------------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: k3s2
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits: { memory: 128Mi }
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [alertmanager.k3s.home.arpa]
+    paths: ["/"]
+
+# ---------------------------------------------------------------------------
+# Grafana: stateless. Datasources and dashboards are provisioned from Git,
+# so the pod can be deleted and comes back identical. No SQLite on NFS.
+# ---------------------------------------------------------------------------
+grafana:
+  persistence:
+    enabled: false
+  admin:
+    existingSecret: grafana-admin # created out-of-band; never in Git
+    userKey: admin-user
+    passwordKey: admin-password
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL # dashboards as ConfigMaps from any namespace (step 9)
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.k3s.home.arpa]
+    path: /
+  grafana.ini:
+    server:
+      root_url: http://grafana.k3s.home.arpa
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
