@@ -1,22 +1,30 @@
 #!/usr/bin/env bash
-# One-time bootstrap: install Argo CD with Helm, then hand control to Git.
-# After this, change the cluster by committing, not by running commands.
+# One-time bootstrap: load the SOPS key, install Argo CD with Helm,
+# then hand control to Git. After this, change the cluster by committing.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export KUBECONFIG="${KUBECONFIG:-$REPO_ROOT/kubeconfig}"
+AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
 
 # Only needs to be close: Argo CD converges to the version pinned in
 # apps/argocd.yaml right after it starts.
 ARGOCD_CHART_VERSION="10.9.6"
 
-echo "==> Checking cluster access"
+echo "==> Checking cluster access and age key"
 kubectl get nodes >/dev/null
+[ -f "$AGE_KEY_FILE" ] || { echo "Missing age key at $AGE_KEY_FILE - restore it from your password manager"; exit 1; }
+
+echo "==> Loading SOPS age key (must exist before the repo server starts)"
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n argocd create secret generic sops-age \
+  --from-file=keys.txt="$AGE_KEY_FILE" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 echo "==> Installing Argo CD (chart ${ARGOCD_CHART_VERSION})"
 helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
 helm upgrade --install argocd argo/argo-cd \
-  --namespace argocd --create-namespace \
+  --namespace argocd \
   --version "$ARGOCD_CHART_VERSION" \
   --values "$REPO_ROOT/values/argocd.yaml" \
   --wait --timeout 10m
