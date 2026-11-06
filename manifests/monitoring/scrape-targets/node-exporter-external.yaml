@@ -1,6 +1,7 @@
 # node_exporter on hosts outside the cluster.
 # Hypervisors: installed by hand (Debian package) - deliberately NOT managed
 # from the provisioner, so it never holds root on the Proxmox hosts.
+# VMs: installed by ansible/exporters.yml (prometheus.prometheus collection).
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
@@ -12,3 +13,7 @@ spec:
       labels: { instance: pve-node1, role: hypervisor }
     - targets: [10.0.20.11:9100]
       labels: { instance: pve-node2, role: hypervisor }
+    - targets: [10.0.20.62:9100]
+      labels: { instance: target01, role: vm, zone: range }
+    - targets: [10.0.20.20:9100]
+      labels: { instance: splunk, role: vm, zone: blue }

@@ -1,0 +1,8 @@
+# Metrics exporters on hosts outside the k3s cluster.
+# Hypervisors are excluded by design: node_exporter is installed there by
+# hand so the provisioner never holds root on the Proxmox hosts.
+- name: node_exporter on Linux VMs
+  hosts: exporters_linux
+  become: true
+  roles:
+    - role: prometheus.prometheus.node_exporter
