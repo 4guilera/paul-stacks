@@ -1,0 +1,13 @@
+# windows_exporter on the Windows range hosts (installed by ansible/exporters.yml).
+# Firewall allows 9182 from the k3s nodes only.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: windows-exporter
+  namespace: monitoring
+spec:
+  staticConfigs:
+    - targets: [10.0.20.60:9182]
+      labels: { instance: dc01, os: windows, zone: range }
+    - targets: [10.0.20.61:9182]
+      labels: { instance: ws01, os: windows, zone: range }

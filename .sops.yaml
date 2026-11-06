@@ -1,6 +1,10 @@
 # SOPS rules for paul-stacks. The public key is safe to commit;
 # the private key never leaves the provisioner and the password manager.
 creation_rules:
+  # Kubernetes Secrets: encrypt values only; names and metadata stay readable in diffs
   - path_regex: manifests/secrets/.*\.sops\.yaml$
-    encrypted_regex: ^(data|stringData)$ # encrypt values only; names and metadata stay readable in diffs
+    encrypted_regex: ^(data|stringData)$
+    age: age1cu69mlylyts3gyjr53skqdh0whwanp6mh0nt7gtervjsl94p94mql5642t
+  # Ansible variable files: encrypt every value; variable names stay readable
+  - path_regex: ansible/.*\.sops\.yaml$
     age: age1cu69mlylyts3gyjr53skqdh0whwanp6mh0nt7gtervjsl94p94mql5642t

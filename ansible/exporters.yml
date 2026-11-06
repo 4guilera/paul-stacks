@@ -6,3 +6,46 @@
   become: true
   roles:
     - role: prometheus.prometheus.node_exporter
+
+- name: windows_exporter on Windows range hosts
+  hosts: exporters_windows
+  vars:
+    windows_exporter_msi: "windows_exporter-{{ windows_exporter_version }}-amd64.msi"
+  tasks:
+    - name: Download the MSI on the provisioner (fails unless the SHA256 matches)
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus-community/windows_exporter/releases/download/v{{ windows_exporter_version }}/{{ windows_exporter_msi }}"
+        dest: "/tmp/{{ windows_exporter_msi }}"
+        checksum: "sha256:{{ windows_exporter_sha256 }}"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Copy the verified MSI to the host
+      ansible.windows.win_copy:
+        src: "/tmp/{{ windows_exporter_msi }}"
+        dest: "C:\\Windows\\Temp\\{{ windows_exporter_msi }}"
+        mode: preserve
+
+    - name: Install windows_exporter
+      ansible.windows.win_package:
+        path: "C:\\Windows\\Temp\\{{ windows_exporter_msi }}"
+        state: present
+
+    - name: Ensure the service runs and starts at boot
+      ansible.windows.win_service:
+        name: windows_exporter
+        start_mode: auto
+        state: started
+
+    - name: Allow scrapes from the k3s nodes only (not all of LAB)
+      community.windows.win_firewall_rule:
+        name: windows_exporter - Prometheus (k3s nodes)
+        localport: 9182
+        protocol: tcp
+        direction: in
+        action: allow
+        remoteip: 10.0.20.70,10.0.20.71
+        profiles: [domain, private, public]
+        enabled: true
+        state: present
